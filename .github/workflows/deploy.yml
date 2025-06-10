@@ -1,0 +1,51 @@
+name: Deploy Model
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: |
+            "{ "clientId": "*************************",
+            "clientSecret": "**************************",
+            "subscriptionId": "**********************",
+            "tenantId": "**************************",
+            "activeDirectoryEndpointUrl": "https://login.microsoftonline.com",
+            "resourceManagerEndpointUrl": "https://management.azure.com/",
+            "activeDirectoryGraphResourceId": "https://graph.windows.net/",
+            "sqlManagementEndpointUrl": "https://management.core.windows.net:8443/",
+            "galleryEndpointUrl": "https://gallery.azure.com/",
+            "managementEndpointUrl": "https://management.core.windows.net/" }
+
+      - name: Log in to Azure Container Registry
+        run: az acr login --name mlflowexample
+
+      - name: Set MODEL_URI environment variable
+        run: echo "MODEL_URI=models:/adult-income-classifier@$champion" >> $GITHUB_ENV
+
+      - name: Build Docker image
+        run: |
+          docker build -t mlflowexample.azurecr.io/model-api ./deployment
+
+      - name: Push Docker image to ACR
+        run: |
+          docker push mlflowexample.azurecr.io/model-api
+
+      - name: Deploy to Azure Container Instances
+        run: |
+          az container create --name model-api --image mlflowexample.azurecr.io/model-api:latest --resource-group "mlflow-rg" --registry-login-server mlflowexample.azurecr.io --registry-username mlflowexample --registry-password ${{ WkcnTBEdOF7U3mW8H0rRaB2TTV+6KpU0kkmiBDNfqy+ACRAAy8+M }} --environment-variables MODEL_URI="models:/adult-income-classifier@champion" MLFLOW_TRACKING_URI="http://57.151.65.76:5000" AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=mlflowstorage123456789;AccountKey=KhEtgeNcPUJXvRiXk+5xRQC1Ij0C7jQdOsPYvrzRTJNFjCJXTvQscxVKoL3/KkKf7NZm5JOExZnW+AStrwhXzQ==;EndpointSuffix=core.windows.net" --dns-name-label model-api-${{ github.run_id }} --ports 8080 --os-type Linux --cpu 0.5 --memory 1.0 --location eastus
+
+      - name: Wait for container to start
+        run: sleep 30
+
+      - name: Probe REST API
+        run: |
+          curl --fail http://model-api-${{ github.run_id }}.eastus.azurecontainer.io:8080/health
