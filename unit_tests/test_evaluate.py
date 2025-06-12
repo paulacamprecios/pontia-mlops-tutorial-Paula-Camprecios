@@ -20,3 +20,5 @@ def test_evaluate_logs(caplog):
     assert "Evaluating model..." in caplog.text
     assert "Test Accuracy" in caplog.text
     assert "Classification Report" in caplog.text
+
+#Add dummy line

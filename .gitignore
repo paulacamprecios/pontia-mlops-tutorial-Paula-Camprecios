@@ -65,3 +65,7 @@ docker-compose.override.yml
 .envrc
 .env.*
 models/model.pkl
+
+
+# --- Remove virtual environment ---
+mlflow-env/
