@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from evaluate import evaluate
+from src.evaluate import evaluate
 
 def test_evaluate_logs(caplog):
     # Create dummy data
@@ -20,3 +20,5 @@ def test_evaluate_logs(caplog):
     assert "Evaluating model..." in caplog.text
     assert "Test Accuracy" in caplog.text
     assert "Classification Report" in caplog.text
+
+#Add dummy line
